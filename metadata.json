@@ -1,0 +1,7 @@
+{
+  "name": "DocScan Pro",
+  "description": "A professional-grade web document scanner with perspective correction, multi-page PDF support, and custom file size export.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

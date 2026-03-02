@@ -113,28 +113,46 @@ export async function transformImage(
 
       if (!imgData) return;
 
+      const data = imgData.data;
+      const width = img.width;
+      const height = img.height;
+
       for (let y = 0; y < targetHeight; y++) {
         for (let x = 0; x < targetWidth; x++) {
           const denominator = h[6] * x + h[7] * y + h[8];
           const srcX = (h[0] * x + h[1] * y + h[2]) / denominator;
           const srcY = (h[3] * x + h[4] * y + h[5]) / denominator;
 
-          if (srcX >= 0 && srcX < img.width && srcY >= 0 && srcY < img.height) {
-            const ix = Math.floor(srcX);
-            const iy = Math.floor(srcY);
-            const srcIdx = (iy * img.width + ix) * 4;
+          if (srcX >= 0 && srcX < width - 1 && srcY >= 0 && srcY < height - 1) {
+            const x1 = Math.floor(srcX);
+            const y1 = Math.floor(srcY);
+            const x2 = x1 + 1;
+            const y2 = y1 + 1;
+
+            const dx = srcX - x1;
+            const dy = srcY - y1;
+
+            const idx11 = (y1 * width + x1) * 4;
+            const idx12 = (y1 * width + x2) * 4;
+            const idx21 = (y2 * width + x1) * 4;
+            const idx22 = (y2 * width + x2) * 4;
+
             const outIdx = (y * targetWidth + x) * 4;
 
-            outData.data[outIdx] = imgData.data[srcIdx];
-            outData.data[outIdx + 1] = imgData.data[srcIdx + 1];
-            outData.data[outIdx + 2] = imgData.data[srcIdx + 2];
-            outData.data[outIdx + 3] = imgData.data[srcIdx + 3];
+            for (let i = 0; i < 4; i++) {
+              const val = 
+                data[idx11 + i] * (1 - dx) * (1 - dy) +
+                data[idx12 + i] * dx * (1 - dy) +
+                data[idx21 + i] * (1 - dx) * dy +
+                data[idx22 + i] * dx * dy;
+              outData.data[outIdx + i] = val;
+            }
           }
         }
       }
 
       ctx.putImageData(outData, 0, 0);
-      resolve(canvas.toDataURL('image/jpeg', 0.9));
+      resolve(canvas.toDataURL('image/jpeg', 1.0));
     };
     img.src = imageSrc;
   });
@@ -164,7 +182,7 @@ export async function rotateImage(imageSrc: string, degrees: number): Promise<st
       ctx.rotate((degrees * Math.PI) / 180);
       ctx.drawImage(img, -img.width / 2, -img.height / 2);
 
-      resolve(canvas.toDataURL('image/jpeg', 0.9));
+      resolve(canvas.toDataURL('image/jpeg', 1.0));
     };
     img.src = imageSrc;
   });

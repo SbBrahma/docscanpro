@@ -54,39 +54,45 @@ export function ExportDialog({ pages, onClose }: ExportDialogProps) {
     let currentWidth = img.width;
     let currentHeight = img.height;
 
-    // Try at 100% quality first
-    let result = getResizedData(currentWidth, currentHeight, 1.0);
-    if (result.size <= limitPerImage) return { data: result.data, quality: 1.0 };
-
-    // Binary search for quality (0.05 to 1.0)
-    let minQ = 0.05;
+    // 1. Try to hit the target by reducing quality down to 0.6 (60%)
+    // This preserves good visual fidelity without blocky artifacts
+    let minQ = 0.6;
     let maxQ = 1.0;
-    let bestData = result.data;
-    let bestQ = 1.0;
+    let bestData = '';
+    let bestSize = Infinity;
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 6; i++) {
       const midQ = (minQ + maxQ) / 2;
-      result = getResizedData(currentWidth, currentHeight, midQ);
-      if (result.size <= limitPerImage) {
-        bestData = result.data;
-        bestQ = midQ;
+      const res = getResizedData(currentWidth, currentHeight, midQ);
+      if (res.size <= limitPerImage) {
+        bestData = res.data;
+        bestSize = res.size;
         minQ = midQ;
       } else {
         maxQ = midQ;
       }
     }
 
-    // If still too big at 0.05 quality, start downscaling
-    if (Math.floor(bestData.length * 0.75) > limitPerImage) {
-      let scale = 0.9;
-      while (scale > 0.1) {
-        result = getResizedData(img.width * scale, img.height * scale, 0.1);
-        if (result.size <= limitPerImage) return { data: result.data, quality: 0.1 };
-        scale -= 0.1;
-      }
+    if (bestData && bestSize <= limitPerImage) {
+      return { data: bestData, quality: minQ };
     }
+
+    // 2. If it still doesn't fit at 60% quality, start downscaling resolution
+    // while keeping quality at a respectable 0.75 (75%)
+    let scale = 0.95;
+    const targetQuality = 0.75;
     
-    return { data: bestData, quality: bestQ };
+    while (scale > 0.1) {
+      const res = getResizedData(img.width * scale, img.height * scale, targetQuality);
+      if (res.size <= limitPerImage) {
+        return { data: res.data, quality: targetQuality };
+      }
+      scale -= 0.05;
+    }
+
+    // 3. Absolute fallback: lowest resolution, lowest quality
+    const finalRes = getResizedData(img.width * 0.1, img.height * 0.1, 0.1);
+    return { data: finalRes.data, quality: 0.1 };
   };
 
   const handleExport = async () => {

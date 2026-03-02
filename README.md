@@ -2,7 +2,7 @@
 
 A professional-grade document scanning and PDF optimization tool created entirely with AI.
 
-> **Disclaimer:** This application was completely built using AI by **me**. Only the application idea is mine. I am not a developer; I created this for personal use only.
+> **Disclaimer:** This application was completely built using AI by **Shashi**. Only the application idea is mine. I am not a developer; I created this for personal use only.
 
 ## 🌟 Features
 
